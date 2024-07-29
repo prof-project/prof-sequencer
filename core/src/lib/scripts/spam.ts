@@ -29,7 +29,16 @@ export const spam = async (
         daiIndex: 0, // always use the first DAI contract
     } : {}
     // calling generateSwaps with only one wallet will produce a bundle with only one tx
-    const txBundles = await Promise.all(
+    // const txBundles = await Promise.all(
+    //     Array(params.txsPerBundle)
+    //     .fill(0)
+    //     .map((_, idx) => mevFlood.generateSwaps(
+    //         swapParams,
+    //         [wallet],
+    //         idx
+    //     )))
+    
+    const profTxBundles = await Promise.all(
         Array(params.txsPerBundle)
         .fill(0)
         .map((_, idx) => mevFlood.generateSwaps(
@@ -37,15 +46,19 @@ export const spam = async (
             [wallet],
             idx
         )))
-    const bundle = txBundles.map(txb => txb.swaps.signedSwaps.map(s => s.signedTx)).flat()
+    
+    // const bundle = txBundles.map(txb => txb.swaps.signedSwaps.map(s => s.signedTx)).flat()
+    const profBundle = profTxBundles.map(txb => txb.swaps.signedSwaps.map(s => s.signedTx)).flat()
 
-    if (params.sendRoute === SendRoute.Mempool) {
-        mevFlood.sendToMempool(bundle).catch((e) => {console.warn("caught", e)})
-    } else if (params.sendRoute === SendRoute.MevShare) {
-        mevFlood.sendToMevShare(bundle, {hints: {calldata: true, logs: true}}).catch((e) => {console.warn(e)})
-    } else {
-        mevFlood.sendBundle(bundle, params.targetBlockNumber).catch((e) => {console.warn(e)})
-    }
+    // if (params.sendRoute === SendRoute.Mempool) {
+    //     mevFlood.sendToMempool(bundle).catch((e) => {console.warn("caught", e)})
+    // } else if (params.sendRoute === SendRoute.MevShare) {
+    //     mevFlood.sendToMevShare(bundle, {hints: {calldata: true, logs: true}}).catch((e) => {console.warn(e)})
+    // } else {
+    //     mevFlood.sendBundle(bundle, params.targetBlockNumber).catch((e) => {console.warn(e)})
+    // }
+
+    await mevFlood.sendToProf(profBundle)
 }
 
 /** Spams continuously, updating the target block if needed. */

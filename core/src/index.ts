@@ -1,15 +1,17 @@
 /** module exports for using mev-flood as a library */
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle'
-import { Wallet, providers, Transaction } from 'ethers'
+import Matchmaker, { BundleParams, IPendingTransaction, TransactionOptions } from "@flashbots/matchmaker-ts"
+import { providers, Transaction, Wallet } from 'ethers'
 import fs from "fs/promises"
 import { BackrunOptions, generateBackrunTx } from './lib/backrun'
-import Matchmaker, { BundleParams, IPendingTransaction, TransactionOptions } from "@flashbots/matchmaker-ts"
 
 // lib
 import { GWEI, populateTxFully, serializePendingTx, textColors } from './lib/helpers'
 import { ILiquidDeployment, LiquidDeployment, loadDeployment as loadDeploymentLib } from './lib/liquid'
 import scripts, { LiquidParams } from './lib/scripts'
-import { approveIfNeeded, SwapOptions, PendingSwap } from './lib/swap'
+import { approveIfNeeded, PendingSwap, SwapOptions } from './lib/swap'
+
+import fetch from "node-fetch"
 
 // TODO: remove this once flashbots/ethers-provider-bundle & mev-flood are updated to use ethers v6 throughout
 const ethersV6 = require('ethersV6')
@@ -121,6 +123,21 @@ class MevFlood {
             pendingTxs.push(await this.provider.sendTransaction(tx))
         }
         return pendingTxs
+    }
+
+    /**
+     * Sends array of transactions to the prof.
+     * @param signedTxs Array of raw signed transactions.
+     * @returns Pending transactions.
+     */
+    async sendToProf(signedTxs: string[]) {
+        console.log("SENDING TO PROF  ", JSON.stringify({transactions: signedTxs}))
+        const response = await fetch('http://mev-relay-api:9062/relay/v1/prof/bundle', {method: "POST", headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({transactions: signedTxs})})
+        console.log("RECEIVED FROM PROF response status ", response.status, response.statusText)
     }
 
     /**
